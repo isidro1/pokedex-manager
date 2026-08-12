@@ -182,9 +182,31 @@ flowchart TD
 - Los archivos reales de entorno (`.env.local`, `.env`, etc.) quedan ignorados por git.
 - `docker-compose.yml` se versiona para reproducir la base local.
 
-## Checklist de entrega (evaluacion)
+## Cobertura de entrega (resumen)
 
-- Requerimientos base implementados: autenticacion, PokeAPI, persistencia, UI responsive.
-- Bonus implementados: LMM (Gemini Vision), MCP y analitica con IA.
-- Instrucciones de instalacion y ejecucion local incluidas en este README.
-- Documentar en el PR/entrega cualquier limitacion conocida del entorno de desarrollo.
+- Requerimientos base cubiertos: autenticacion, PokeAPI, persistencia y UI responsive.
+- Bonus cubiertos: Gemini Vision, MCP y analitica con IA.
+- Este README incluye instalacion, ejecucion local y validacion funcional.
+
+## Checklist de validacion rapida del evaluador (10-15 min)
+
+1. Clonar el repositorio e instalar dependencias con `pnpm install`.
+2. Levantar PostgreSQL local con `docker compose up -d`.
+3. Configurar variables de entorno desde `.env.example` hacia `.env.local`.
+4. Ejecutar `pnpm db:generate` y luego `pnpm db:migrate`.
+5. Iniciar la aplicacion con `pnpm dev` y abrir `http://localhost:3000`.
+6. Registrar un usuario con email/password y validar login exitoso.
+7. Probar login con Google (si credenciales OAuth estan configuradas).
+8. Buscar un Pokemon en `/pokedex` y agregarlo a la coleccion.
+9. Ir a `/collection` y validar CRUD completo (crear, editar, eliminar) con datos persistidos.
+10. Ir a `/identify` y validar identificacion por imagen (Gemini Vision) con confirmacion antes de agregar.
+11. Ir a `/analytics` y validar metricas objetivas + insights IA + comparador.
+12. Ir a `/assistant` y validar al menos: consulta de coleccion, recomendacion y accion con confirmacion.
+13. Ejecutar `pnpm check` para validar lint, typecheck y tests.
+
+Resultado esperado:
+
+- La app funciona end-to-end en local.
+- Las rutas privadas requieren autenticacion.
+- Cada usuario solo ve y modifica sus propios datos.
+- Los bonus de IA (Vision, MCP, Analytics) son demostrables.
