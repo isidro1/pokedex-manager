@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StatusToast } from "@/components/ui/status-toast";
 
@@ -66,10 +66,6 @@ export function CollectionStatusBanner({ status }: { status?: string }) {
     return knownStatus ? getStatusView(knownStatus) : null;
   }, [knownStatus]);
   const [isOpen, setIsOpen] = useState(Boolean(view));
-
-  useEffect(() => {
-    setIsOpen(Boolean(view));
-  }, [view]);
 
   function clearStatusInUrl(): void {
     const params = new URLSearchParams(searchParams.toString());

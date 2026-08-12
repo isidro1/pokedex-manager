@@ -21,6 +21,29 @@ type LoginFormProps = {
   redirectTo: string;
 };
 
+function GoogleIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.3-2 3.1l3.2 2.5c1.9-1.8 3-4.4 3-7.6 0-.8-.1-1.5-.2-2.2H12z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.2-2.5c-.9.6-2 1-3.5 1-2.7 0-5-1.8-5.8-4.3H2.9v2.7C4.6 19.9 8 22 12 22z"
+      />
+      <path
+        fill="#4A90E2"
+        d="M6.2 13.8c-.2-.6-.3-1.2-.3-1.8s.1-1.2.3-1.8V7.5H2.9C2.3 8.8 2 10.3 2 12s.3 3.2.9 4.5l3.3-2.7z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8C17 2.9 14.7 2 12 2 8 2 4.6 4.1 2.9 7.5l3.3 2.7c.8-2.5 3.1-4.3 5.8-4.3z"
+      />
+    </svg>
+  );
+}
+
 async function persistSession(idToken: string): Promise<void> {
   const response = await fetch("/api/auth/session", {
     method: "POST",
@@ -245,63 +268,85 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-10">
-      <h1 className="text-3xl font-semibold text-slate-900">Iniciar sesion</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Accede para gestionar tu coleccion y usar las funciones de IA.
-      </p>
+    <main className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-6 py-10 sm:px-8">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.12),transparent_40%),radial-gradient(circle_at_85%_75%,rgba(16,185,129,0.12),transparent_38%)]" />
 
-      <form
-        onSubmit={handleEmailLogin}
-        className="mt-8 space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-      >
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-700">Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-slate-600 focus:outline-none"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-slate-700">Contrasena</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-slate-600 focus:outline-none"
-          />
-        </label>
+      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <section className="rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-sm backdrop-blur">
+          <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">Bienvenido</p>
+          <h1 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">Iniciar sesion</h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            Accede para gestionar tu coleccion, analizar Pokemon con IA y recibir recomendaciones personalizadas.
+          </p>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <ul className="mt-5 space-y-2 text-sm text-slate-700">
+            <li className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">Coleccion personal con ownership</li>
+            <li className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">Identificacion desde imagen con Gemini Vision</li>
+            <li className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">Asistente IA con herramientas MCP</li>
+          </ul>
+        </section>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLoading ? "Procesando..." : "Entrar con email"}
-        </button>
-      </form>
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.12)] sm:p-7">
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={handleGoogleLogin}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <GoogleIcon />
+            <span>{isLoading ? "Procesando..." : "Continuar con Google"}</span>
+          </button>
 
-      <button
-        type="button"
-        disabled={isLoading}
-        onClick={handleGoogleLogin}
-        className="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isLoading ? "Procesando..." : "Entrar con Google"}
-      </button>
+          <div className="my-5 flex items-center gap-3 text-xs text-slate-500">
+            <span className="h-px flex-1 bg-slate-200" />
+            <span>o entra con email</span>
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
 
-      <p className="mt-6 text-sm text-slate-600">
-        No tienes cuenta?{" "}
-        <Link href="/register" className="font-medium text-slate-900 underline">
-          Registrate
-        </Link>
-      </p>
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <label className="block text-sm">
+              <span className="mb-1 block text-slate-700">Email</span>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-slate-600 focus:outline-none"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-slate-700">Contrasena</span>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-slate-600 focus:outline-none"
+              />
+            </label>
+
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? "Procesando..." : "Entrar"}
+            </button>
+          </form>
+
+          <p className="mt-5 text-sm text-slate-600">
+            No tienes cuenta?{" "}
+            <Link href="/register" className="font-semibold text-slate-900 underline">
+              Registrate
+            </Link>
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Al continuar aceptas los terminos de uso y politica de privacidad de la plataforma.
+          </p>
+        </section>
+      </div>
     </main>
   );
 }

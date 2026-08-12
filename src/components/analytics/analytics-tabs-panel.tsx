@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import type { AIInteractionOverview } from "@/domain/ai/ai-interaction-overview";
 import type { AICollectionInsights, ObjectiveCollectionAnalytics } from "@/domain/ai/collection-insights";
@@ -10,7 +10,17 @@ import type { Pokemon } from "@/domain/pokemon/pokemon";
 import { PokemonShowcaseCard } from "@/components/pokemon/pokemon-showcase-card";
 import { MetricTile } from "@/components/ui/metric-tile";
 
-type TabKey = "resumen" | "recomendaciones" | "actividad";
+type TabKey = "resumen" | "recomendaciones" | "comparador" | "actividad";
+
+type ComparisonSide = "left" | "right" | "tie";
+
+type ComparisonRow = {
+  label: string;
+  leftValue: string;
+  rightValue: string;
+  winner: ComparisonSide;
+  hint: string;
+};
 
 type AnalyticsTabsPanelProps = {
   objectiveAnalytics: ObjectiveCollectionAnalytics;
@@ -39,6 +49,68 @@ function buildAnalyzeHref(pokemonId: number): string {
 
 function buildViewHref(pokemonId: number): string {
   return `/analytics?pokemonId=${pokemonId}&openReport=1`;
+}
+
+function findWinnerByNumericMetric(
+  leftValue: number | null,
+  rightValue: number | null,
+): ComparisonSide {
+  if (leftValue === rightValue) {
+    return "tie";
+  }
+
+  if (leftValue === null) {
+    return rightValue === null ? "tie" : "right";
+  }
+
+  if (rightValue === null) {
+    return "left";
+  }
+
+  return leftValue > rightValue ? "left" : "right";
+}
+
+function formatMaybeNumber(value: number | null, suffix = ""): string {
+  if (value === null) {
+    return "N/A";
+  }
+
+  return `${value}${suffix}`;
+}
+
+function calculateVersatilityScore(pokemon: Pokemon, missingTypesSet: Set<string>): number {
+  const typeCoverageScore = pokemon.types.length * 25;
+  const abilityCoverageScore = (pokemon.abilities?.length ?? 0) * 8;
+  const experienceScore = Math.round((pokemon.baseExperience ?? 0) / 5);
+  const missingTypeCoverageBonus = pokemon.types.reduce((total, type) => {
+    return missingTypesSet.has(type.toLowerCase()) ? total + 35 : total;
+  }, 0);
+
+  return typeCoverageScore + abilityCoverageScore + experienceScore + missingTypeCoverageBonus;
+}
+
+function getWinnerBadgeClass(side: ComparisonSide): string {
+  if (side === "left") {
+    return "border-blue-200 bg-blue-50 text-blue-800";
+  }
+
+  if (side === "right") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  }
+
+  return "border-slate-200 bg-slate-100 text-slate-700";
+}
+
+function getWinnerBadgeLabel(side: ComparisonSide): string {
+  if (side === "left") {
+    return "Gana A";
+  }
+
+  if (side === "right") {
+    return "Gana B";
+  }
+
+  return "Empate";
 }
 
 export function AnalyticsTabsPanel({
@@ -81,6 +153,179 @@ export function AnalyticsTabsPanel({
   ).length;
   const [activeTab, setActiveTab] = useState<TabKey>(autoOpenReport ? "recomendaciones" : "resumen");
   const [isReportOpen, setIsReportOpen] = useState(autoOpenReport && hasReportData);
+  const [leftPokemonId, setLeftPokemonId] = useState<number | null>(null);
+  const [rightPokemonId, setRightPokemonId] = useState<number | null>(null);
+
+  const comparisonCandidates = useMemo(() => {
+    const merged = [
+      ...collectionPokemon,
+      ...recentAnalyzedPokemon,
+      ...generalRecommendationsToRender,
+      ...typeRecommendationsToRender,
+    ];
+    const uniqueById = new Map<number, Pokemon>();
+
+    for (const pokemon of merged) {
+      if (!uniqueById.has(pokemon.id)) {
+        uniqueById.set(pokemon.id, pokemon);
+      }
+    }
+
+    return [...uniqueById.values()];
+  }, [
+    collectionPokemon,
+    recentAnalyzedPokemon,
+    generalRecommendationsToRender,
+    typeRecommendationsToRender,
+  ]);
+
+  const resolvedLeftPokemonId =
+    leftPokemonId !== null && comparisonCandidates.some((pokemon) => pokemon.id === leftPokemonId)
+      ? leftPokemonId
+      : comparisonCandidates[0]?.id ?? null;
+
+  const resolvedRightPokemonId =
+    rightPokemonId !== null &&
+    comparisonCandidates.some((pokemon) => pokemon.id === rightPokemonId) &&
+    rightPokemonId !== resolvedLeftPokemonId
+      ? rightPokemonId
+      : comparisonCandidates.find((pokemon) => pokemon.id !== resolvedLeftPokemonId)?.id ?? null;
+
+  const leftPokemon =
+    resolvedLeftPokemonId !== null
+      ? comparisonCandidates.find((pokemon) => pokemon.id === resolvedLeftPokemonId) ?? null
+      : null;
+  const rightPokemon =
+    resolvedRightPokemonId !== null
+      ? comparisonCandidates.find((pokemon) => pokemon.id === resolvedRightPokemonId) ?? null
+      : null;
+
+  const missingTypesSet = useMemo(
+    () => new Set(objectiveAnalytics.missingTypes.map((item) => item.toLowerCase())),
+    [objectiveAnalytics.missingTypes],
+  );
+
+  const leftTypeCount = leftPokemon?.types.length ?? 0;
+  const rightTypeCount = rightPokemon?.types.length ?? 0;
+  const leftAbilityCount = leftPokemon?.abilities?.length ?? 0;
+  const rightAbilityCount = rightPokemon?.abilities?.length ?? 0;
+  const leftBaseExperience = leftPokemon?.baseExperience ?? null;
+  const rightBaseExperience = rightPokemon?.baseExperience ?? null;
+  const leftMissingCoverage =
+    leftPokemon?.types.reduce(
+      (total, type) => (missingTypesSet.has(type.toLowerCase()) ? total + 1 : total),
+      0,
+    ) ?? 0;
+  const rightMissingCoverage =
+    rightPokemon?.types.reduce(
+      (total, type) => (missingTypesSet.has(type.toLowerCase()) ? total + 1 : total),
+      0,
+    ) ?? 0;
+  const leftVersatilityScore =
+    leftPokemon !== null ? calculateVersatilityScore(leftPokemon, missingTypesSet) : null;
+  const rightVersatilityScore =
+    rightPokemon !== null ? calculateVersatilityScore(rightPokemon, missingTypesSet) : null;
+
+  const comparisonRows: ComparisonRow[] =
+    leftPokemon && rightPokemon
+      ? [
+          {
+            label: "Cobertura de tipos",
+            leftValue: String(leftTypeCount),
+            rightValue: String(rightTypeCount),
+            winner: findWinnerByNumericMetric(leftTypeCount, rightTypeCount),
+            hint: "Mas tipos suele dar mayor flexibilidad en equipo.",
+          },
+          {
+            label: "Variedad de habilidades",
+            leftValue: String(leftAbilityCount),
+            rightValue: String(rightAbilityCount),
+            winner: findWinnerByNumericMetric(leftAbilityCount, rightAbilityCount),
+            hint: "Mas habilidades amplia opciones tacticas.",
+          },
+          {
+            label: "Cubre tipos faltantes",
+            leftValue: String(leftMissingCoverage),
+            rightValue: String(rightMissingCoverage),
+            winner: findWinnerByNumericMetric(leftMissingCoverage, rightMissingCoverage),
+            hint: "Prioriza quien reduce vacios de tu coleccion.",
+          },
+          {
+            label: "Experiencia base",
+            leftValue: formatMaybeNumber(leftBaseExperience),
+            rightValue: formatMaybeNumber(rightBaseExperience),
+            winner: findWinnerByNumericMetric(leftBaseExperience, rightBaseExperience),
+            hint: "Sirve como proxy rapido de potencial general.",
+          },
+          {
+            label: "Indice de versatilidad",
+            leftValue: formatMaybeNumber(leftVersatilityScore),
+            rightValue: formatMaybeNumber(rightVersatilityScore),
+            winner: findWinnerByNumericMetric(leftVersatilityScore, rightVersatilityScore),
+            hint: "Combina tipos, habilidades, experiencia y cobertura faltante.",
+          },
+        ]
+      : [];
+
+  const comparisonWinner = findWinnerByNumericMetric(leftVersatilityScore, rightVersatilityScore);
+  const sharedTypes =
+    leftPokemon && rightPokemon
+      ? leftPokemon.types.filter((type) => rightPokemon.types.includes(type))
+      : [];
+  const sharedAbilities =
+    leftPokemon && rightPokemon
+      ? (leftPokemon.abilities ?? []).filter((ability) =>
+          (rightPokemon.abilities ?? []).includes(ability),
+        )
+      : [];
+
+  const comparisonTakeaways: string[] = [];
+
+  if (leftPokemon && rightPokemon) {
+    if (sharedTypes.length > 0) {
+      comparisonTakeaways.push(`Comparten tipo(s): ${sharedTypes.join(", ")}.`);
+    } else {
+      comparisonTakeaways.push("No comparten tipos: buena opcion para comparar roles complementarios.");
+    }
+
+    if (sharedAbilities.length > 0) {
+      comparisonTakeaways.push(`Comparten habilidad(es): ${sharedAbilities.join(", ")}.`);
+    }
+
+    if (leftMissingCoverage !== rightMissingCoverage) {
+      const betterCoverageName =
+        leftMissingCoverage > rightMissingCoverage ? leftPokemon.name : rightPokemon.name;
+      comparisonTakeaways.push(
+        `${betterCoverageName} aporta mejor cobertura de tipos faltantes para tu coleccion.`,
+      );
+    }
+
+    if (comparisonWinner === "left") {
+      comparisonTakeaways.push(`Recomendacion actual: priorizar ${leftPokemon.name} en esta comparativa.`);
+    } else if (comparisonWinner === "right") {
+      comparisonTakeaways.push(`Recomendacion actual: priorizar ${rightPokemon.name} en esta comparativa.`);
+    } else {
+      comparisonTakeaways.push("Resultado parejo: ambos tienen valor similar segun los datos actuales.");
+    }
+  }
+
+  function handleLeftSelection(nextPokemonId: number): void {
+    setLeftPokemonId(nextPokemonId);
+
+    if (resolvedRightPokemonId === nextPokemonId) {
+      const fallback = comparisonCandidates.find((pokemon) => pokemon.id !== nextPokemonId);
+      setRightPokemonId(fallback?.id ?? null);
+    }
+  }
+
+  function handleRightSelection(nextPokemonId: number): void {
+    setRightPokemonId(nextPokemonId);
+
+    if (resolvedLeftPokemonId === nextPokemonId) {
+      const fallback = comparisonCandidates.find((pokemon) => pokemon.id !== nextPokemonId);
+      setLeftPokemonId(fallback?.id ?? null);
+    }
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -210,6 +455,17 @@ export function AnalyticsTabsPanel({
             }`}
           >
             Recomendaciones
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("comparador")}
+            className={`rounded-xl px-3 py-2 text-xs font-semibold sm:text-sm ${
+              activeTab === "comparador"
+                ? "bg-slate-900 text-white"
+                : "border border-slate-300 text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            Comparador
           </button>
           <button
             type="button"
@@ -380,6 +636,116 @@ export function AnalyticsTabsPanel({
               )}
             </div>
           </div>
+        </article>
+      ) : null}
+
+      {activeTab === "comparador" ? (
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">
+            Comparativas inteligentes entre Pokemon (1 vs 1)
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Selecciona dos Pokemon para compararlos en vivo por cobertura de tipos, habilidades,
+            experiencia base y aporte a tu coleccion.
+          </p>
+
+          {comparisonCandidates.length < 2 ? (
+            <p className="mt-3 rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-600">
+              Necesitas al menos dos Pokemon para usar el comparador interactivo.
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <label className="text-sm text-slate-700">
+                  <span className="mb-1 block font-semibold text-slate-800">Pokemon A</span>
+                  <select
+                    value={resolvedLeftPokemonId ?? ""}
+                    onChange={(event) => handleLeftSelection(Number(event.target.value))}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  >
+                    {comparisonCandidates.map((pokemon) => (
+                      <option key={`left-${pokemon.id}`} value={pokemon.id}>
+                        #{pokemon.id} {pokemon.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-sm text-slate-700">
+                  <span className="mb-1 block font-semibold text-slate-800">Pokemon B</span>
+                  <select
+                    value={resolvedRightPokemonId ?? ""}
+                    onChange={(event) => handleRightSelection(Number(event.target.value))}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2"
+                  >
+                    {comparisonCandidates
+                      .filter((pokemon) => pokemon.id !== resolvedLeftPokemonId)
+                      .map((pokemon) => (
+                        <option key={`right-${pokemon.id}`} value={pokemon.id}>
+                          #{pokemon.id} {pokemon.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+
+              {leftPokemon && rightPokemon ? (
+                <>
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <PokemonShowcaseCard
+                      pokemon={leftPokemon}
+                      headerNote="Comparativa · Pokemon A"
+                      showCuriosity={false}
+                    />
+                    <PokemonShowcaseCard
+                      pokemon={rightPokemon}
+                      headerNote="Comparativa · Pokemon B"
+                      showCuriosity={false}
+                    />
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {comparisonRows.map((row) => (
+                      <div
+                        key={row.label}
+                        className="grid gap-2 rounded-xl border border-slate-200 p-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{row.label}</p>
+                          <p className="text-xs text-slate-500">{row.hint}</p>
+                        </div>
+                        <p className="rounded-lg bg-slate-50 px-2 py-1 text-sm text-slate-800">{row.leftValue}</p>
+                        <p className="rounded-lg bg-slate-50 px-2 py-1 text-sm text-slate-800">{row.rightValue}</p>
+                        <span
+                          className={`inline-flex items-center justify-center rounded-full border px-2 py-1 text-xs font-semibold ${getWinnerBadgeClass(row.winner)}`}
+                        >
+                          {getWinnerBadgeLabel(row.winner)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/70 p-4">
+                    <p className="text-xs font-semibold tracking-wide text-indigo-900 uppercase">
+                      Veredicto inteligente
+                    </p>
+                    <p className="mt-1 text-sm text-indigo-900">
+                      {comparisonWinner === "left"
+                        ? `${leftPokemon.name} toma ventaja por su indice de versatilidad.`
+                        : comparisonWinner === "right"
+                          ? `${rightPokemon.name} toma ventaja por su indice de versatilidad.`
+                          : "Empate tecnico: ambos Pokemon tienen un perfil competitivo similar."}
+                    </p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-indigo-900">
+                      {comparisonTakeaways.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              ) : null}
+            </>
+          )}
         </article>
       ) : null}
 

@@ -39,7 +39,7 @@ export default async function CollectionPage({ searchParams }: CollectionPagePro
         </p>
       </header>
 
-      <CollectionStatusBanner status={params?.status} />
+      <CollectionStatusBanner key={params?.status ?? "none"} status={params?.status} />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <MetricTile label="Registros" value={stats.totalPokemon} hint="Pokemon distintos guardados" />
