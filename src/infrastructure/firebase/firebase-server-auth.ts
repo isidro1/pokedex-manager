@@ -1,8 +1,21 @@
-import { getApps, initializeApp, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getServerEnv } from "@/lib/env/server-env";
 import { AuthenticationError } from "@/lib/errors/application-errors";
 import type { AuthIdentity } from "@/domain/user/user";
+
+type DecodedFirebaseToken = {
+  uid?: string;
+  email?: string;
+  name?: string;
+  picture?: string;
+  email_verified?: boolean;
+};
+
+type FirebaseAdminAuth = {
+  verifyIdToken: (
+    idToken: string,
+    checkRevoked?: boolean,
+  ) => Promise<DecodedFirebaseToken>;
+};
 
 type IdentityToolkitResponse = {
   users?: Array<{
@@ -14,24 +27,48 @@ type IdentityToolkitResponse = {
   }>;
 };
 
-function getFirebaseAdminAuthOrNull() {
+let firebaseAdminAuthPromise: Promise<FirebaseAdminAuth | null> | null = null;
+
+async function getFirebaseAdminAuthOrNull(): Promise<FirebaseAdminAuth | null> {
   const env = getServerEnv();
+
   if (!env.FIREBASE_CLIENT_EMAIL || !env.FIREBASE_PRIVATE_KEY) {
     return null;
   }
 
-  if (getApps().length === 0) {
-    initializeApp({
-      credential: cert({
-        projectId: env.FIREBASE_PROJECT_ID,
-        clientEmail: env.FIREBASE_CLIENT_EMAIL,
-        privateKey: env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-      }),
-      projectId: env.FIREBASE_PROJECT_ID,
-    });
+  const firebaseClientEmail = env.FIREBASE_CLIENT_EMAIL;
+  const firebasePrivateKey = env.FIREBASE_PRIVATE_KEY;
+  const firebaseProjectId = env.FIREBASE_PROJECT_ID;
+
+  if (firebaseAdminAuthPromise) {
+    return firebaseAdminAuthPromise;
   }
 
-  return getAuth();
+  firebaseAdminAuthPromise = (async () => {
+    try {
+      const [{ cert, getApps, initializeApp }, { getAuth }] = await Promise.all([
+        import("firebase-admin/app"),
+        import("firebase-admin/auth"),
+      ]);
+
+      if (getApps().length === 0) {
+        initializeApp({
+          credential: cert({
+            projectId: firebaseProjectId,
+            clientEmail: firebaseClientEmail,
+            privateKey: firebasePrivateKey.replace(/\\n/g, "\n"),
+          }),
+          projectId: firebaseProjectId,
+        });
+      }
+
+      return getAuth() as unknown as FirebaseAdminAuth;
+    } catch {
+      return null;
+    }
+  })();
+
+  return firebaseAdminAuthPromise;
 }
 
 async function verifyWithIdentityToolkit(idToken: string): Promise<AuthIdentity> {
@@ -69,7 +106,7 @@ async function verifyWithIdentityToolkit(idToken: string): Promise<AuthIdentity>
 }
 
 export async function verifyFirebaseToken(idToken: string): Promise<AuthIdentity> {
-  const adminAuth = getFirebaseAdminAuthOrNull();
+  const adminAuth = await getFirebaseAdminAuthOrNull();
 
   if (adminAuth) {
     try {
