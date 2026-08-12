@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-border: #e2e8f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --font-sans:
+    "Avenir Next", "Trebuchet MS", "Segoe UI", "Candara", "Helvetica Neue", sans-serif;
+  --font-mono: "SFMono-Regular", "Menlo", "Consolas", monospace;
 }
 
 body {
-  background: var(--background);
+  min-height: 100vh;
+  background:
+    linear-gradient(145deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(148, 163, 184, 0.06) 0,
+      rgba(148, 163, 184, 0.06) 1px,
+      transparent 1px,
+      transparent 28px
+    );
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    "Avenir Next", "Trebuchet MS", "Segoe UI", "Candara", "Helvetica Neue", sans-serif;
+}
+
+button:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+summary,
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
 }

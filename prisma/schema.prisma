@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CollectionSource {
+  MANUAL
+  IMAGE
+  AI
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+model User {
+  id             String          @id @default(cuid())
+  firebaseUid    String          @unique
+  email          String          @unique
+  displayName    String?
+  photoUrl       String?
+  collection     CollectionItem[]
+  conversations  Conversation[]
+  aiInteractions AIInteraction[]
+  pokemonInsights PokemonAIInsight[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model CollectionItem {
+  id        String           @id @default(cuid())
+  userId    String
+  pokemonId Int
+  quantity  Int              @default(1)
+  nickname  String?
+  notes     String?
+  source    CollectionSource @default(MANUAL)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([pokemonId])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  content        String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime?
+
+  @@index([conversationId])
+}
+
+model AIInteraction {
+  id        String   @id @default(cuid())
+  userId    String
+  operation String
+  model     String
+  latencyMs Int?
+  success   Boolean
+  toolCalls Json?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PokemonAIInsight {
+  id        String   @id @default(cuid())
+  userId    String
+  pokemonId Int
+  model     String
+  pokemonName String?
+  pokemonTypes String[] @default([])
+  spriteUrl String?
+  artworkUrl String?
+  insights  Json
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, pokemonId, createdAt])
+  @@index([userId, pokemonId])
+  @@index([userId, createdAt])
+}
