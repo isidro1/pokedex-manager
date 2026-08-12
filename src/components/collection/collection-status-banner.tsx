@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { StatusToast } from "@/components/ui/status-toast";
 
 type CollectionStatus = "added" | "updated" | "deleted" | "error";
 
 type StatusView = {
+  title: string;
   message: string;
   tone: "success" | "error";
+  autoHideMs?: number;
 };
 
 function toKnownStatus(value?: string): CollectionStatus | null {
@@ -21,58 +24,84 @@ function toKnownStatus(value?: string): CollectionStatus | null {
 function getStatusView(status: CollectionStatus): StatusView {
   if (status === "added") {
     return {
+      title: "Coleccion actualizada",
       message: "Pokemon agregado a tu colección.",
       tone: "success",
+      autoHideMs: 2600,
     };
   }
 
   if (status === "updated") {
     return {
+      title: "Coleccion actualizada",
       message: "Item actualizado correctamente.",
       tone: "success",
+      autoHideMs: 2600,
     };
   }
 
   if (status === "deleted") {
     return {
+      title: "Coleccion actualizada",
       message: "Item eliminado de la colección.",
       tone: "success",
+      autoHideMs: 2600,
     };
   }
 
   return {
+    title: "Operacion no completada",
     message: "No se pudo completar la operación.",
     tone: "error",
+    autoHideMs: 4500,
   };
 }
 
 export function CollectionStatusBanner({ status }: { status?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [view] = useState<StatusView | null>(() => {
-    const knownStatus = toKnownStatus(status);
+  const searchParams = useSearchParams();
+  const knownStatus = toKnownStatus(status);
+  const view = useMemo(() => {
     return knownStatus ? getStatusView(knownStatus) : null;
-  });
+  }, [knownStatus]);
+  const [isOpen, setIsOpen] = useState(Boolean(view));
 
   useEffect(() => {
-    const knownStatus = toKnownStatus(status);
+    setIsOpen(Boolean(view));
+  }, [view]);
 
-    // Keep error params because they carry useful context (e.g., add_failed).
-    if (!knownStatus || knownStatus === "error") {
-      return;
+  function clearStatusInUrl(): void {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+
+    // Keep error code when present so collection page can keep contextual UI behavior.
+    if (knownStatus !== "error") {
+      params.delete("code");
     }
 
-    router.replace(pathname, { scroll: false });
-  }, [pathname, router, status]);
+    const query = params.toString();
+    const nextUrl = query.length > 0 ? `${pathname}?${query}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+  }
 
-  if (!view) {
+  function handleClose(): void {
+    setIsOpen(false);
+    clearStatusInUrl();
+  }
+
+  if (!view || !isOpen) {
     return null;
   }
 
-  const className =
-    view.tone === "success"
-      ? "rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
-      : "rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900";
-
-  return <p className={className}>{view.message}</p>;
+  return (
+    <StatusToast
+      title={view.title}
+      message={view.message}
+      tone={view.tone}
+      open={isOpen}
+      onClose={handleClose}
+      autoHideMs={view.autoHideMs}
+    />
+  );
 }
