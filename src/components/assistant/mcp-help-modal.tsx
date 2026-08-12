@@ -28,7 +28,7 @@ function getCategoryLabel(tool: MCPToolView): string {
   }
 
   if (tool.category === "analitica") {
-    return "Analitica";
+    return "Analítica";
   }
 
   return "Consulta";
@@ -76,7 +76,7 @@ export function MCPHelpModal({ tools, activity }: MCPHelpModalProps) {
             <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Ayuda e info MCP</h2>
-                <p className="text-xs text-slate-500">Tools disponibles para consulta, analitica y acciones seguras.</p>
+                <p className="text-xs text-slate-500">Tools disponibles para consulta, analítica y acciones seguras.</p>
               </div>
               <button
                 type="button"

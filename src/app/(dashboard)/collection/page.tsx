@@ -35,8 +35,8 @@ export default async function CollectionPage({ searchParams }: CollectionPagePro
   return (
     <section className="space-y-6">
       <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-100 p-4">
-        <p className="text-xs font-medium tracking-[0.18em] text-slate-600 uppercase">Mi coleccion</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">Collection</h1>
+        <p className="text-xs font-medium tracking-[0.18em] text-slate-600 uppercase">Mi colección</p>
+        <h1 className="mt-2 text-3xl font-semibold text-slate-900">Colección</h1>
         <p className="mt-2 text-slate-600">
           Esta pantalla es tu inventario: cantidades, alias y notas de tus Pokemon guardados.
         </p>

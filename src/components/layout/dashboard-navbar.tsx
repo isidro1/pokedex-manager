@@ -8,9 +8,9 @@ import { getFirebaseAuth } from "@/infrastructure/firebase/firebase-client";
 const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/pokedex", label: "PokeDex" },
-  { href: "/collection", label: "Coleccion" },
-  { href: "/identify", label: "Vision" },
-  { href: "/analytics", label: "Analitica" },
+  { href: "/collection", label: "Colección" },
+  { href: "/identify", label: "Visión" },
+  { href: "/analytics", label: "Analítica" },
   { href: "/assistant", label: "Asistente IA" },
 ];
 
@@ -50,6 +50,7 @@ export function DashboardNavbar() {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 className={`whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium transition sm:text-sm ${
                   isActive
                     ? "bg-slate-900 text-white"

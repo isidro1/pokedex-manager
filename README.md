@@ -50,6 +50,7 @@ cp .env.example .env.local
 2. Completar valores reales para Firebase y Gemini.
 3. Para Firebase web, usar credenciales de una Web App (no solo Android).
 4. Para Prisma, asegurese de tener `DATABASE_URL` disponible en el entorno que ejecuta los comandos de DB.
+5. Para simular produccion local, usar [./.env.production.example](./.env.production.example) y/o sincronizar un archivo real desde Vercel.
 
 Nota: si no configuras FIREBASE_CLIENT_EMAIL y FIREBASE_PRIVATE_KEY, el backend valida idTokens con Identity Toolkit como fallback server-side.
 
@@ -65,6 +66,27 @@ Variables esperadas en `.env.local`:
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY`
 - `GEMINI_API_KEY`
+
+Archivos recomendados:
+
+- `.env.local`: desarrollo local (normalmente con PostgreSQL de Docker).
+- `.env.production.local`: pruebas locales en modo produccion con secretos reales (ignorado por git).
+- `.env.production.example`: plantilla versionada para documentar forma esperada de variables en produccion.
+
+### Sincronizar variables de produccion desde Vercel
+
+Para traer el entorno de produccion de Vercel a tu maquina (sin versionar secretos):
+
+```bash
+pnpm dlx vercel env pull .env.production.local --environment=production
+```
+
+Con eso puedes validar local en modo produccion:
+
+```bash
+pnpm build
+pnpm start
+```
 
 ## Setup local
 

@@ -48,7 +48,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
   if (collectionItems.length === 0) {
     return (
       <section className="space-y-4">
-        <h1 className="text-3xl font-semibold text-slate-900">Analitica IA</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Analítica IA</h1>
         <p className="rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-600">
           Aun no hay datos para analizar. Agrega Pokemon a tu coleccion y vuelve aqui.
         </p>
@@ -158,8 +158,8 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
   return (
     <section className="space-y-6">
       <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 p-4">
-        <p className="text-xs font-medium tracking-[0.18em] text-slate-600 uppercase">Analitica</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">Analitica IA</h1>
+        <p className="text-xs font-medium tracking-[0.18em] text-slate-600 uppercase">Analítica</p>
+        <h1 className="mt-2 text-3xl font-semibold text-slate-900">Analítica IA</h1>
         <p className="mt-2 text-slate-600">
           Secciones separadas en tabs para evitar ruido visual. El informe IA aparece en modal al analizar una carta.
         </p>
