@@ -30,6 +30,7 @@ function buildSearchParams(input: Record<string, string>) {
 
 export async function addCollectionItemAction(formData: FormData) {
   const currentUser = await requireCurrentUser();
+  let redirectUrl = "/collection?status=added";
 
   try {
     const payload = addCollectionItemSchema.parse({
@@ -46,15 +47,17 @@ export async function addCollectionItemAction(formData: FormData) {
     });
 
     revalidatePath("/collection");
-    redirect("/collection?status=added");
   } catch {
     const params = buildSearchParams({ status: "error", code: "add_failed" });
-    redirect(`/collection?${params}`);
+    redirectUrl = `/collection?${params}`;
   }
+
+  redirect(redirectUrl);
 }
 
 export async function updateCollectionItemAction(formData: FormData) {
   const currentUser = await requireCurrentUser();
+  let redirectUrl = "/collection?status=updated";
 
   try {
     const payload = updateCollectionItemSchema.parse({
@@ -70,15 +73,17 @@ export async function updateCollectionItemAction(formData: FormData) {
     });
 
     revalidatePath("/collection");
-    redirect("/collection?status=updated");
   } catch {
     const params = buildSearchParams({ status: "error", code: "update_failed" });
-    redirect(`/collection?${params}`);
+    redirectUrl = `/collection?${params}`;
   }
+
+  redirect(redirectUrl);
 }
 
 export async function deleteCollectionItemAction(formData: FormData) {
   const currentUser = await requireCurrentUser();
+  let redirectUrl = "/collection?status=deleted";
 
   try {
     const payload = deleteCollectionItemSchema.parse({
@@ -88,9 +93,10 @@ export async function deleteCollectionItemAction(formData: FormData) {
     await deleteCollectionItem(payload.itemId, currentUser.id);
 
     revalidatePath("/collection");
-    redirect("/collection?status=deleted");
   } catch {
     const params = buildSearchParams({ status: "error", code: "delete_failed" });
-    redirect(`/collection?${params}`);
+    redirectUrl = `/collection?${params}`;
   }
+
+  redirect(redirectUrl);
 }

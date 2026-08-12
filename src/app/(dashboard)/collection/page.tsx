@@ -3,6 +3,7 @@ import { requireCurrentUser } from "@/application/auth/get-current-user";
 import { getCollectionByUserId } from "@/application/collection/collection-service";
 import { getCollectionStats } from "@/application/collection/get-collection-stats";
 import { CollectionAddForm } from "@/components/collection/collection-add-form";
+import { CollectionStatusBanner } from "@/components/collection/collection-status-banner";
 import { CollectionTable } from "@/components/collection/collection-table";
 import { MetricTile } from "@/components/ui/metric-tile";
 
@@ -13,23 +14,11 @@ type CollectionPageProps = {
   }>;
 };
 
-function getStatusMessage(status?: string): string | null {
-  if (!status) return null;
-
-  if (status === "added") return "Pokemon agregado a tu coleccion.";
-  if (status === "updated") return "Item actualizado correctamente.";
-  if (status === "deleted") return "Item eliminado de la coleccion.";
-  if (status === "error") return "No se pudo completar la operacion.";
-
-  return null;
-}
-
 export default async function CollectionPage({ searchParams }: CollectionPageProps) {
   const currentUser = await requireCurrentUser();
   const collectionItems = await getCollectionByUserId(currentUser.id);
   const stats = getCollectionStats(collectionItems);
   const params = searchParams ? await searchParams : undefined;
-  const statusMessage = getStatusMessage(params?.status);
   const shouldOpenAddForm = params?.code === "add_failed";
 
   return (
@@ -50,11 +39,7 @@ export default async function CollectionPage({ searchParams }: CollectionPagePro
         </p>
       </header>
 
-      {statusMessage ? (
-        <p className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700">
-          {statusMessage}
-        </p>
-      ) : null}
+      <CollectionStatusBanner status={params?.status} />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <MetricTile label="Registros" value={stats.totalPokemon} hint="Pokemon distintos guardados" />
